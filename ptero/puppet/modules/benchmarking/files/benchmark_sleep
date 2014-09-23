@@ -1,0 +1,5 @@
+#!/bin/bash
+
+SLEEPTIME=$(jq '.sleeptime | tonumber' <&0)
+sleep $SLEEPTIME
+echo "{\"sleeptime\": $SLEEPTIME}"
