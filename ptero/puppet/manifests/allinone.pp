@@ -81,3 +81,6 @@ postgresql::server::db {$ptero::params::workflow::database_name :
 class {'ptero::workflow::web':
   require => Postgresql::Server::Db[$ptero::params::workflow::database_name],
 }
+
+# --- Benchmarking ---
+include benchmarking

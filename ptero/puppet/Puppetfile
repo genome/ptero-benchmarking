@@ -11,3 +11,6 @@ mod 'thomasvandoren-redis'
 
 mod 'genome-ptero',
     :git => "git://github.com/genome/ptero-puppet.git"
+
+mod 'benchmarking',
+    :path => "benchmarking"
