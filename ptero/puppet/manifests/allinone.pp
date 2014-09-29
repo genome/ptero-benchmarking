@@ -20,9 +20,6 @@ class {'rabbitmq':
   delete_guest_user => true,
   service_manage    => false,
 }
-package {'python-librabbitmq':
-  ensure => present,
-}
 
 
 # --- Auth ---
