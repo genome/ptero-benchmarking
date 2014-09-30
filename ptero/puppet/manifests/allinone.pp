@@ -22,16 +22,6 @@ class {'rabbitmq':
 }
 
 
-# --- Auth ---
-postgresql::server::db {$ptero::params::auth::database_name :
-  user     => $ptero::params::auth::database_username,
-  password => $ptero::params::auth::database_password,
-}
-class {'ptero::auth::web':
-  require => Postgresql::Server::Db[$ptero::params::auth::database_name],
-}
-
-
 # --- Shell command ---
 class {'ptero::shell_command::rabbitmq': }
 class {'ptero::shell_command::redis': }
