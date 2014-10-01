@@ -1,0 +1,16 @@
+forge "https://forge.puppetlabs.com"
+
+mod 'daenney-circus'
+mod 'jfryman-nginx'
+mod 'puppetlabs-apt'
+mod 'puppetlabs-postgresql'
+mod 'puppetlabs-rabbitmq'
+mod 'puppetlabs-vcsrepo'
+mod 'stankevich-python'
+mod 'thomasvandoren-redis'
+
+mod 'genome-ptero',
+    :git => "git://github.com/genome/ptero-puppet.git"
+
+mod 'benchmarking',
+    :path => "benchmarking"

@@ -1,0 +1,7 @@
+---
+:backends:
+    - yaml
+:yaml:
+    :datadir: manifests/configuration
+:hierarchy:
+    - allinone
