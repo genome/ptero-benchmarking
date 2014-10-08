@@ -2,43 +2,91 @@
 
 import argparse
 import copy
+import itertools
 import json
 import requests
 import time
 
 
-PROTOTYPE_WORKFLOW = {
-    "nodes": {
-        "A": {
-            "methods": [
-                {
-                    "name": "execute",
-                    "command_line": ["cat"]
-                }
-            ],
-            "parallelBy": "parallel_param"
-        }
+PROTOTYPE_WORKFLOWS = {
+    'echo': {
+        "nodes": {
+            "A": {
+                "methods": [
+                    {
+                        "name": "execute",
+                        "command_line": ["cat"],
+                    }
+                ],
+                "parallelBy": "parallel_param"
+            }
+        },
+
+        "edges": [
+            {
+                "source": "input connector",
+                "destination": "A",
+                "sourceProperty": "in_parallel",
+                "destinationProperty": "parallel_param"
+            },
+            {
+                "source": "A",
+                "destination": "output connector",
+                "sourceProperty": "parallel_param",
+                "destinationProperty": "out_parallel"
+            }
+        ],
+
+        "inputs": {},
+        "environment": {}
     },
 
-    "edges": [
-        {
-            "source": "input connector",
-            "destination": "A",
-            "sourceProperty": "in_parallel",
-            "destinationProperty": "parallel_param"
+    'sleep': {
+        "nodes": {
+            "A": {
+                "methods": [
+                    {
+                        "name": "execute",
+                        "command_line": ["/usr/local/bin/benchmark_sleep"]
+                    }
+                ],
+                "parallelBy": "sleeptime"
+            }
         },
-        {
-            "source": "A",
-            "destination": "output connector",
-            "sourceProperty": "parallel_param",
-            "destinationProperty": "out_parallel"
-        }
-    ],
 
-    "inputs": {},
-    "environment": {}
+        "edges": [
+            {
+                "source": "input connector",
+                "destination": "A",
+                "sourceProperty": "in_parallel",
+                "destinationProperty": "sleeptime"
+            },
+            {
+                "source": "A",
+                "destination": "output connector",
+                "sourceProperty": "sleeptime",
+                "destinationProperty": "out_parallel"
+            }
+        ],
+
+        "inputs": {},
+        "environment": {}
+    }
 }
 
+
+def echo_inputs(size):
+    return ['kitten-' + str(i) for i in xrange(size)]
+
+
+def sleep_inputs(size):
+    return list(itertools.repeat(0.1, size))
+
+
+INPUTS_MAP = {
+    'echo': echo_inputs,
+    'sleep': sleep_inputs,
+}
 
 
 
@@ -46,10 +94,7 @@ def main():
     args = parse_args()
 
     for size in args.sizes:
-        workflow = copy.copy(PROTOTYPE_WORKFLOW)
-        workflow['inputs']['in_parallel'] = generate_inputs(size)
-
-        serialized_workflow = json.dumps(workflow)
+        serialized_workflow = _construct_request_body(size, type=args.type)
 
         start = time.time()
         wait_url = submit(args.url, serialized_workflow)
@@ -59,19 +104,23 @@ def main():
         print "%s\t%s" % (size, stop-start)
 
 
+def _construct_request_body(size, type):
+    workflow = copy.copy(PROTOTYPE_WORKFLOWS[type])
+    workflow['inputs']['in_parallel'] = INPUTS_MAP[type](size)
+
+    return json.dumps(workflow)
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('type', choices=['echo', 'sleep'])
     parser.add_argument('sizes', nargs='+', type=int)
     parser.add_argument('--url',
             default='http://192.168.10.10:4000/v1/workflows')
     parser.add_argument('--polling-interval', type=float, default=0.5)
 
     return parser.parse_args()
-
-
-def generate_inputs(size, prefix='kitten-'):
-    return [prefix + str(i) for i in xrange(size)]
 
 
 def submit(submit_url, data):
