@@ -14,6 +14,12 @@ cd /home/vagrant
 if [ ! -d galaxy-dist ]; then
     sudo -u vagrant tar xf /tmp/tip.tar.gz
     sudo -u vagrant mv galaxy-galaxy-dist-* galaxy-dist
+    cd galaxy-dist
+    sudo -u vagrant bash scripts/common_startup.sh
+    cd ..
 fi
 
-cp -R /vagrant/galaxy-configuration/* galaxy-dist/
+cp -R /vagrant/config/* /
+rm /etc/nginx/sites-enables/default
+
+service nginx restart
