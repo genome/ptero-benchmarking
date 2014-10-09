@@ -8,7 +8,7 @@
     </repeat>
   </inputs>
   <outputs>
-    <data name="run_time_file" format="tabular" label="File containing the total runtime of the benchmark" hidden="false"/>
+    <data name="run_time_file" format="tabular" label="Total Runtime" hidden="false"/>
   </outputs>
 
   <help>
