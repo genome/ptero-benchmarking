@@ -1,0 +1,18 @@
+<tool id="benchmark_sleep_stop" name="Sleep Stop">
+  <description>Record the total runtime of the workflow.</description>
+  <command interpreter="python">sleepyStop $start_time_file $run_time_file</command>
+  <inputs>
+    <param name="start_time_file" type="data" format="tabular" label="start_time_file"/>
+    <repeat name="sleepresults" title="Sleep Result">
+      <param name="sleep_result" type="data" format="tabular" label="sleep_result"/>
+    </repeat>
+  </inputs>
+  <outputs>
+    <data name="run_time_file" format="tabular" label="File containing the total runtime of the benchmark" hidden="false"/>
+  </outputs>
+
+  <help>
+This is a fancy way of benchmarking things.
+  </help>
+
+</tool>

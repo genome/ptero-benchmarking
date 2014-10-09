@@ -1,0 +1,12 @@
+<tool id="benchmark_sleep_start" name="Sleep Start">
+  <description>Record the start time of the workflow.</description>
+  <command interpreter="bash">sleepyStart $start_time_file</command>
+  <outputs>
+    <data name="start_time_file" format="tabular" label="File containing timestamp of this job"/>
+  </outputs>
+
+  <help>
+This is a fancy way of benchmarking things.
+  </help>
+
+</tool>

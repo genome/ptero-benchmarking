@@ -1,0 +1,16 @@
+<tool id="benchmark_sleep" name="Sleep">
+  <description>Sleep a fixed amount of time</description>
+  <command interpreter="bash">sleepyTool $sleeptime $result</command>
+  <inputs>
+    <param name="start_time_file" type="data" format="tabular" label="start_time_file"/>
+    <param name="sleeptime" type="float" value="0.1" label="Time to sleep"/>
+  </inputs>
+  <outputs>
+    <data name="result" format="tabular"/>
+  </outputs>
+
+  <help>
+This is a fancy way of benchmarking things.
+  </help>
+
+</tool>
