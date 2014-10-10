@@ -18,6 +18,8 @@ if [ ! -d galaxy-dist ]; then
     sudo -u vagrant bash scripts/common_startup.sh
     sudo -u vagrant python scripts/manage_db.py
     cd ..
+
+    sudo -u postgres psql < /vagrant/galaxy-db-setup.sql
 fi
 
 cp -R /vagrant/config/* /
