@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<toolbox>
+  <section id="benchmarking" name="Benchmark">
+    <tool file="benchmarking/sleepyStart.xml" />
+    <tool file="benchmarking/sleepyTool.xml" />
+    <tool file="benchmarking/sleepyStop.xml" />
+  </section>
+</toolbox>
