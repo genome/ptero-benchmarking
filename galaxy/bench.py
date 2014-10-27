@@ -12,9 +12,13 @@ def main():
     for size in args.size:
         workflow_data = generate.workflow(size)
         workflow = galaxy_client.workflows.import_workflow_json(workflow_data)
-        result = galaxy_client.workflows.run_workflow(workflow['id'],
-                history_name='parallel-%s' % size)
-        runtime = get_runtime(galaxy_client, result['outputs'][-1],
+        history_name = 'parallel-%s' % size
+
+        submit_workflow(galaxy_client, workflow, history_name)
+        wait_for_history(galaxy_client, history_name,
+                polling_time=args.polling_time)
+
+        runtime = get_runtime(galaxy_client, history_name,
                 polling_time=args.polling_time)
         print '%s\t%s' % (size, runtime)
 
@@ -55,13 +59,61 @@ def get_galaxy_client(args):
     return galaxy.GalaxyInstance(args.url, key=api_key)
 
 
-_WAIT_STATES = {'queued', 'running'}
-def get_runtime(galaxy_client, dataset_id, polling_time=0.5):
-    while galaxy_client.datasets.show_dataset(dataset_id
-            ).get('state') in _WAIT_STATES:
+def submit_workflow(galaxy_client, workflow, history_name):
+    try:
+        galaxy_client.workflows.run_workflow(workflow['id'],
+                history_name=history_name)
+    except galaxy.client.ConnectionError:
+        pass
+
+
+def wait_for_history(galaxy_client, history_name, polling_time=0.5):
+    history_id = get_history_id(galaxy_client, history_name)
+    while not history_finished(galaxy_client, history_id):
         time.sleep(polling_time)
+
+
+def get_history_id(galaxy_client, history_name, retry_time=0.5):
+    history_id = None
+    while history_id is None:
+        try:
+            histories = galaxy_client.histories.get_histories(name=history_name)
+            history_id = histories[-1]['id']
+        except galaxy.client.ConnectionError:
+            time.sleep(retry_time)
+    return history_id
+
+
+_WAIT_STATES = {'queued', 'running'}
+def history_finished(galaxy_client, history_id):
+    try:
+        return galaxy_client.histories.get_status(history_id).get('state'
+                ) not in _WAIT_STATES
+    except galaxy.client.ConnectionError:
+        return False
+
+
+def get_runtime(galaxy_client, history_name, polling_time=0.5):
+    dataset_id = get_dataset_id(galaxy_client, history_name, polling_time)
     return float(galaxy_client.datasets.download_dataset(
         dataset_id).rstrip('\n'))
+
+
+def get_dataset_id(galaxy_client, history_name, retry_time=0.5):
+    history_id = get_history_id(galaxy_client, history_name)
+
+    dataset_id = None
+    while dataset_id is None:
+        try:
+            # XXX Can give the wrong ds id
+            result = galaxy_client.histories.show_history(history_id)
+            if len(result['state_ids']['running']) != 0:
+                continue
+            dataset_id = result['state_ids']['ok'][-1]
+        except galaxy.client.ConnectionError:
+            time.sleep(retry_time)
+
+    return dataset_id
 
 
 if __name__ == '__main__':
