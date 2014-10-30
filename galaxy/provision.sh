@@ -36,9 +36,3 @@ service galaxy start
 echo `date`: Restarting nginx 1>&2
 rm /etc/nginx/sites-enabled/default
 service nginx restart
-
-
-# Wait for galaxy to create its database tables, then create a user
-sleep 300
-echo `date`: Creating galaxy user 1>&2
-sudo -u postgres psql -d galaxy < /vagrant/galaxy-db-setup.sql
