@@ -10,12 +10,15 @@ import time
 
 PROTOTYPE_WORKFLOWS = {
     'echo': {
-        "nodes": {
+        "tasks": {
             "A": {
                 "methods": [
                     {
                         "name": "execute",
-                        "command_line": ["cat"],
+                        "service": "ShellCommand",
+                        "parameters": {
+                            "commandLine": ["cat"],
+                        },
                     }
                 ],
                 "parallelBy": "parallel_param"
@@ -42,30 +45,79 @@ PROTOTYPE_WORKFLOWS = {
     },
 
     'sleep': {
-        "nodes": {
-            "A": {
+        "tasks": {
+            "start": {
                 "methods": [
                     {
                         "name": "execute",
-                        "command_line": ["/usr/local/bin/benchmark_sleep"]
+                        "service": "ShellCommand",
+                        "parameters": {
+                            "commandLine": ["/usr/local/bin/benchmark_start"]
+                        },
+                    }
+                ],
+            },
+            "sleep": {
+                "methods": [
+                    {
+                        "name": "execute",
+                        "service": "ShellCommand",
+                        "parameters": {
+                            "commandLine": ["/usr/local/bin/benchmark_sleep"]
+                        },
                     }
                 ],
                 "parallelBy": "sleeptime"
+            },
+            "stop": {
+                "methods": [
+                    {
+                        "name": "execute",
+                        "service": "ShellCommand",
+                        "parameters": {
+                            "commandLine": ["/usr/local/bin/benchmark_stop"]
+                        },
+                    }
+                ]
             }
         },
 
         "edges": [
             {
                 "source": "input connector",
-                "destination": "A",
+                "destination": "start",
+                "sourceProperty": "in_parallel",
+                "destinationProperty": "unused_sleeptimes"
+            },
+            {
+                "source": "input connector",
+                "destination": "sleep",
                 "sourceProperty": "in_parallel",
                 "destinationProperty": "sleeptime"
             },
             {
-                "source": "A",
-                "destination": "output connector",
+                "source": "start",
+                "destination": "sleep",
+                "sourceProperty": "start_time",
+                "destinationProperty": "unused_start_time"
+            },
+            {
+                "source": "sleep",
+                "destination": "stop",
                 "sourceProperty": "sleeptime",
-                "destinationProperty": "out_parallel"
+                "destinationProperty": "unused_sleeptimes"
+            },
+            {
+                "source": "start",
+                "destination": "stop",
+                "sourceProperty": "start_time",
+                "destinationProperty": "start_time"
+            },
+            {
+                "source": "stop",
+                "destination": "output connector",
+                "sourceProperty": "run_time",
+                "destinationProperty": "run_time"
             }
         ],
 
@@ -96,12 +148,10 @@ def main():
     for size in args.sizes:
         serialized_workflow = _construct_request_body(size, type=args.type)
 
-        start = time.time()
-        wait_url = submit(args.url, serialized_workflow)
-        wait(wait_url, size, args.polling_interval)
-        stop = time.time()
+        outputs_url = submit(args.url, serialized_workflow)
+        run_time = _get_run_time(outputs_url, args.polling_interval)
 
-        print "%s\t%s" % (size, stop-start)
+        print "%s\t%s" % (size, run_time)
 
 
 def _construct_request_body(size, type):
@@ -118,7 +168,7 @@ def parse_args():
     parser.add_argument('sizes', nargs='+', type=int)
     parser.add_argument('--url',
             default='http://192.168.10.10:4000/v1/workflows')
-    parser.add_argument('--polling-interval', type=float, default=0.5)
+    parser.add_argument('--polling-interval', type=float, default=10)
 
     return parser.parse_args()
 
@@ -133,25 +183,21 @@ def _wait_url(location_url):
     return 'http://192.168.10.10:4000/v1/reports/workflow-outputs?workflow_id=%s' % location_url.split('/')[-1]
 
 
-def wait(url, expected_size, polling_interval):
-    response = requests.get(url)
-    while not _len_ok(response, 'out_parallel', expected_size):
+def _get_run_time(url, polling_interval):
+    run_time = _instantaneous_run_time(url)
+    while run_time is None:
         time.sleep(polling_interval)
-        response = requests.get(url)
+        run_time = _instantaneous_run_time(url)
+    return run_time
 
-def _len_ok(response, name, expected_size):
-    try:
+
+def _instantaneous_run_time(url):
+    response = requests.get(url)
+    assert(response.status_code in [200, 500, 502])
+
+    if response.status_code == 200:
         outputs = response.json()['outputs']
-        obj = outputs.get(name)
-    except Exception as e:
-        print e
-        print response.text
-        return True
-
-    if obj:
-        return len(obj) == expected_size
-    else:
-        return False
+        return outputs.get('run_time')
 
 
 if __name__ == '__main__':
